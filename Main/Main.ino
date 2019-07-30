@@ -92,8 +92,8 @@ void loop() {
   FTImpl.GetCTouchXY(cTouchXY);
 
   uint8_t touchedButtonTag = FTImpl.Read( REG_TOUCH_TAG);
-  //Serial.println(touchedButtonTag);
 
+// Map the touch events to a key struct and store them for the highlighting
   if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
     Position pos = Position();
     pos.x = cTouchXY.x0;
