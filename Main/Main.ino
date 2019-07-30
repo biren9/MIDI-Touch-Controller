@@ -2,10 +2,8 @@
 #include "Wire.h"
 #include "FT_NHD_43CTP_SHIELD.h"
 #include "Drawing.h"
-#include "TouchScreen.h"
 
 FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
-
 
 /* Api to bootup FT801, verify FT801 hardware and configure display/audio pins */
 /* Returns 0 in case of success and 1 in case of failure */
@@ -83,12 +81,14 @@ void loop() {
   FTImpl.GetCTouchXY(cTouchXY);
 
   uint8_t touchedButtonTag = FTImpl.Read( REG_TOUCH_TAG);
-  Serial.println(touchedButtonTag);
-
-  int array[5] = {};
+  //Serial.println(touchedButtonTag);
 
   if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
-    /*Serial.println("Touch 0");*/
+    Position pos = Position();
+    pos.x = cTouchXY.x0;
+    pos.y = cTouchXY.y0;
+    Key key = Drawing::selectedKey(pos);
+    Serial.println(key.yValue);
   }
 
   if (cTouchXY.x1 != invalidTouch || cTouchXY.y1 != invalidTouch) {
@@ -114,11 +114,10 @@ void loop() {
 
 
 
-
+uint16_t numberOfLines = 8;
+ uint16_t numberOfRows = 8;
 
 static void Drawing::drawGrid() {
-  uint16_t numberOfLines = 8;
-  uint16_t numberOfRows = 8;
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
 
@@ -161,24 +160,17 @@ static void Drawing::drawGrid() {
 }
 
 
-
-
-
-struct TouchScreen::Position {
-  int16_t x;
-  int16_t y;
-};
-
-struct TouchScreen::Key {
-  uint8_t tag;
-  uint8_t xValue;
-  uint8_t yValue;
-};
-
-TouchScreen::Key TouchScreen::selectedKey(Position position) {
+static Key Drawing::selectedKey(Position position) {
   Key key = Key();
-  key.tag = 0;
-  key.xValue = 0;
-  key.yValue = 0;
+  int32_t buttonWidth = FT_DISPLAYWIDTH / numberOfLines;
+  int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
+  uint16_t selectedLine = position.x / buttonWidth;
+  uint16_t selectedRow = position.y / buttonHight;
+  double xValue = (double)(position.x - selectedLine*buttonWidth) / (double)buttonWidth;
+  double yValue = (double)(position.y - selectedRow*buttonHight) / (double)buttonHight;
+
+  key.tag = selectedLine * numberOfLines + selectedRow;
+  key.xValue = xValue;
+  key.yValue = yValue;
   return key;
 }
