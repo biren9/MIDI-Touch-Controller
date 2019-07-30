@@ -1,7 +1,5 @@
 #include "SPI.h"
 #include "Wire.h"
-
-/* Touchscreen display*/
 #include "FT_NHD_43CTP_SHIELD.h"
 
 /* Global object for FT801 Implementation */
@@ -31,38 +29,24 @@ int16_t BootupConfigure() {
   return 0;
 }
 
-/* API to display points, lines and rectangles on the screen */
-void Primitives() {
-  uint16_t numberOfLines = 8;
-  uint16_t numberOfRows = 8;
-  uint16_t lineWidth = 4;
-  uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
-  uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
+/* API for calibration on FT801 */
+void calibrate() {
+  /*************************************************************************/
+  /* Below code demonstrates the usage of calibrate function. Calibrate    */
+  /* function will wait untill user presses all the three dots. Only way to*/
+  /* come out of this api is to reset the coprocessor bit.                 */
+  /*************************************************************************/
 
-  FTImpl.DLStart();//start the display list. Note DLStart and DLEnd are helper apis, Cmd_DLStart() and Display() can also be utilized.
+  /* Construct the display list with grey as background color, informative string "Please Tap on the dot" followed by inbuilt calibration command */
+  FTImpl.DLStart();
+  FTImpl.ClearColorRGB(64, 64, 64);
+  FTImpl.Clear(1, 1, 1);
+  FTImpl.ColorRGB(0xff, 0xff, 0xff);
+  FTImpl.Cmd_Text((FT_DISPLAYWIDTH / 2), (FT_DISPLAYHEIGHT / 2), 27, FT_OPT_CENTER, "Please Tap on the dot");
+  FTImpl.Cmd_Calibrate(0);
 
-
-  /* display list for line strip */
-  FTImpl.ColorRGB(0xFF, 0xFF, 0xFF); //set the color of the line strip to white
-
-  for (uint16_t line = 1; line < numberOfLines; ++line) {
-    uint16_t xPos = displayWidth / numberOfLines * line;
-    FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
-    FTImpl.Vertex2f(xPos, 0); //starting coordinates
-    FTImpl.Vertex2f(xPos, displayHeight);
-    FTImpl.End();//end line strip primitive
-  }
-
-  for (int row = 1; row < numberOfRows; ++row) {
-    uint16_t yPos = displayHeight / numberOfRows * row;
-    FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
-    FTImpl.Vertex2f(0, yPos); //starting coordinates
-    FTImpl.Vertex2f(displayWidth, yPos);
-    FTImpl.End();//end line strip primitive
-  }
-
-  FTImpl.DLEnd();//end the display list
-  FTImpl.Finish();//render the display list and wait for the completion of the DL
+  /* Wait for the completion of calibration - either finish can be used for flush and check can be used */
+  FTImpl.Finish();
 }
 
 /* bootup the module and display primitives on screen */
@@ -76,12 +60,28 @@ void setup() {
     //error case - do not do any thing
   }
   else {
-    Primitives();
+    calibrate();
+    FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
-  Serial.println("--End Application--");
 }
 
-/* Nothing in loop api */
+int32_t  wbutton, hbutton, tagval, tagoption;
+int16_t yValue, xValue, pendown;
+sCTouchXY cTouchXY;
+/*wbutton = FT_DISPLAYWIDTH / 8;
+  hbutton = FT_DISPLAYHEIGHT / 8;*/
+
+
+
 void loop() {
-  //
+  /* Read the touch screen xy and tag from GetCTouchXY API */
+  FTImpl.GetCTouchXY(cTouchXY);
+  yValue = cTouchXY.y1;
+  xValue = cTouchXY.x1;
+  Serial.println(yValue);
+  Serial.println(xValue);
+
+  /* Construct a screen shot with grey color as background, check constantly the touch registers,
+     form the infromative string for the coordinates of the touch, check for tag */
+  drawGrid();
 }
