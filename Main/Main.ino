@@ -60,11 +60,14 @@ void setup() {
   Serial.println("--Start Application--");
   if (BootupConfigure()) {
     //error case - do not do any thing
+    Serial.println("Error");
   }
   else {
     /*calibrate();*/
     FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
+
+  Serial.println("End Setup");
 }
 
 int32_t  wbutton, hbutton, tagval, tagoption;
@@ -75,9 +78,17 @@ sCTouchXY cTouchXY;
 
 int32_t invalidTouch = -pow(2, 15);
 
+
+Key keys[5];
+
 void loop() {
   /* Read the touch screen xy and tag from GetCTouchXY API */
-  Drawing::drawGrid();
+  Drawing::drawGrid(keys);
+  keys[0] = Key();
+  keys[1] = Key();
+  keys[2] = Key();
+  keys[3] = Key();
+  keys[4] = Key();
   FTImpl.GetCTouchXY(cTouchXY);
 
   uint8_t touchedButtonTag = FTImpl.Read( REG_TOUCH_TAG);
@@ -88,21 +99,37 @@ void loop() {
     pos.x = cTouchXY.x0;
     pos.y = cTouchXY.y0;
     Key key = Drawing::selectedKey(pos);
-    Serial.println(key.yValue);
+    keys[0] = key;
   }
 
   if (cTouchXY.x1 != invalidTouch || cTouchXY.y1 != invalidTouch) {
-    /*Serial.println("Touch 1");*/
+    Position pos = Position();
+    pos.x = cTouchXY.x1;
+    pos.y = cTouchXY.y1;
+    Key key = Drawing::selectedKey(pos);
+    keys[1] = key;
   }
 
   if (cTouchXY.x2 != invalidTouch || cTouchXY.y2 != invalidTouch) {
-    /*Serial.println("Touch 2");*/
+    Position pos = Position();
+    pos.x = cTouchXY.x2;
+    pos.y = cTouchXY.y2;
+    Key key = Drawing::selectedKey(pos);
+    keys[2] = key;
   }
   if (cTouchXY.x3 != invalidTouch || cTouchXY.y3 != invalidTouch) {
-    Serial.println("Touch 3");
+    Position pos = Position();
+    pos.x = cTouchXY.x3;
+    pos.y = cTouchXY.y3;
+    Key key = Drawing::selectedKey(pos);
+    keys[3] = key;
   }
   if (cTouchXY.x4 != invalidTouch || cTouchXY.y4 != invalidTouch) {
-    Serial.println("Touch 4");
+    Position pos = Position();
+    pos.x = cTouchXY.x4;
+    pos.y = cTouchXY.y4;
+    Key key = Drawing::selectedKey(pos);
+    keys[4] = key;
   }
 
   Serial.println("_________________");
@@ -115,22 +142,32 @@ void loop() {
 
 
 uint16_t numberOfLines = 8;
- uint16_t numberOfRows = 8;
+uint16_t numberOfRows = 8;
 
-static void Drawing::drawGrid() {
+static void Drawing::drawGrid(Key keys[5]) {
+  Serial.println(keys[0].tag);
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
 
   FTImpl.DLStart();//start the display list. Note DLStart and DLEnd are helper apis, Cmd_DLStart() and Display() can also be utilized.
 
-  FTImpl.Cmd_FGColor(0x008000);
   int32_t buttonWidth = FT_DISPLAYWIDTH / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
   for (uint16_t line = 0; line < numberOfLines; ++line) {
     for (int row = 0; row < numberOfRows; ++row) {
       uint16_t xPos = FT_DISPLAYWIDTH / numberOfLines * line;
       uint16_t yPos = FT_DISPLAYHEIGHT / numberOfRows * row;
-      FTImpl.Tag(line * numberOfLines + row);
+      uint8_t tag = line * numberOfLines + row + 1;
+      FTImpl.Tag(tag);
+      FTImpl.Cmd_FGColor(0x008000);
+      for(int k=0; k < 5; ++k) {
+        if (keys[k].tag == tag) {
+          FTImpl.Cmd_FGColor(0x900000);
+          Serial.println("FOUND");
+          break;
+        }
+      }
+      
       FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 16, FT_OPT_FLAT, "C");
     }
   }
@@ -166,10 +203,10 @@ static Key Drawing::selectedKey(Position position) {
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
   uint16_t selectedLine = position.x / buttonWidth;
   uint16_t selectedRow = position.y / buttonHight;
-  double xValue = (double)(position.x - selectedLine*buttonWidth) / (double)buttonWidth;
-  double yValue = (double)(position.y - selectedRow*buttonHight) / (double)buttonHight;
+  double xValue = (double)(position.x - selectedLine * buttonWidth) / (double)buttonWidth;
+  double yValue = (double)(position.y - selectedRow * buttonHight) / (double)buttonHight;
 
-  key.tag = selectedLine * numberOfLines + selectedRow;
+  key.tag = selectedLine * numberOfLines + selectedRow + 1;
   key.xValue = xValue;
   key.yValue = yValue;
   return key;

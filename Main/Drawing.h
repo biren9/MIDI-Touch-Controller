@@ -15,6 +15,6 @@ typedef struct {
 
 class Drawing {  
   public:
-    static void drawGrid();
+    static void drawGrid(Key keys[5]);
     static Key selectedKey(Position position);
 };
