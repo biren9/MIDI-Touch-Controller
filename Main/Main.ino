@@ -60,7 +60,7 @@ void setup() {
     //error case - do not do any thing
   }
   else {
-    calibrate();
+    /*calibrate();*/
     FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
 }
@@ -71,17 +71,30 @@ sCTouchXY cTouchXY;
 /*wbutton = FT_DISPLAYWIDTH / 8;
   hbutton = FT_DISPLAYHEIGHT / 8;*/
 
-
+int32_t invalidTouch = -pow(2, 15);
 
 void loop() {
   /* Read the touch screen xy and tag from GetCTouchXY API */
-  FTImpl.GetCTouchXY(cTouchXY);
-  yValue = cTouchXY.y1;
-  xValue = cTouchXY.x1;
-  Serial.println(yValue);
-  Serial.println(xValue);
-
-  /* Construct a screen shot with grey color as background, check constantly the touch registers,
-     form the infromative string for the coordinates of the touch, check for tag */
   drawGrid();
+  FTImpl.GetCTouchXY(cTouchXY);
+
+  if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
+    Serial.println("Touch 0");
+  }
+
+  if (cTouchXY.x1 != invalidTouch || cTouchXY.y1 != invalidTouch) {
+    Serial.println("Touch 1");
+  }
+
+  if (cTouchXY.x2 != invalidTouch || cTouchXY.y2 != invalidTouch) {
+    Serial.println("Touch 2");
+  }
+  if (cTouchXY.x3 != invalidTouch || cTouchXY.y3 != invalidTouch) {
+    Serial.println("Touch 3");
+  }
+  if (cTouchXY.x4 != invalidTouch || cTouchXY.y4 != invalidTouch) {
+    Serial.println("Touch 4");
+  }
+
+  Serial.println("_________________");
 }
