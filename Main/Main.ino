@@ -149,7 +149,6 @@ uint16_t numberOfLines = 8;
 uint16_t numberOfRows = 8;
 
 static void Drawing::drawGrid(Key keys[5]) {
-  Serial.println(keys[0].tag);
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
 
@@ -167,7 +166,6 @@ static void Drawing::drawGrid(Key keys[5]) {
       for(int k=0; k < 5; ++k) {
         if (keys[k].tag == tag) {
           FTImpl.Cmd_FGColor(0x900000);
-          Serial.println("FOUND");
           break;
         }
       }
