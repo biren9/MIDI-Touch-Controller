@@ -37,40 +37,54 @@ void MidiController::playNotes(Key keys[5]) {
       }
     }
 
-    if (!hasFound) {
+    if (!hasFound && keys[keyIndex].tag != 0) {
       Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
       Serial3.write(0x7F & noteForKey(keys[keyIndex]));
       Serial3.write(0x7F & 127);
-      currentPlayingKeys[keyIndex] = keys[keyIndex];
+      currentPlayingKeys[keyIndex] = keys[keyIndex];      
     }
   }
+
+controlChange(74, keys[0].xValue);
+  
+}
+
+#define EFFECT_LEVEL 7
+#define EFFECT_PAN 10
+#define EFFECT_CUTOFF 74
+
+void MidiController::controlChange(uint8_t control, double value) {
+  Serial3.write(MIDI_COMMAND_CONTROL_CHANGE | 0);
+  Serial3.write(control);
+  Serial3.write((int)(value*127));
+  Serial.println(value);
 }
 
 
-int MidiController::noteForRow(uint8_t row) {
+static Note MidiController::noteForRow(uint8_t row) {
   switch (row) {
     case 0:
-      return 0;
+      return {0, "C"};
     case 1:
-      return 2;
+      return {2, "D"};
     case 2:
-      return 3;
+      return {4, "E"};
     case 3:
-      return 4;
+      return {5, "F"};
     case 4:
-      return 5;
+      return {7, "G"};
     case 5:
-      return 7;
+      return {9, "A"};
     case 6:
-      return 9;
+      return {11, "B"};
     case 7:
-      return 11;
+      return {12, "C"};
     default:
-      return 0;
+      return {0, "C"};
   }
 }
 
 
 int MidiController::noteForKey(Key key) {
-  return noteForRow(key.row) + 12 * (key.line + 2);
+  return noteForRow(key.row).value + 12 * oktave;
 }

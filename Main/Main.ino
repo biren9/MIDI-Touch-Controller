@@ -11,7 +11,7 @@ FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
 int16_t BootupConfigure() {
   uint32_t chipid = 0;
   FTImpl.Init(FT_DISPLAY_RESOLUTION);//configure the display to the WQVGA
-
+  
   delay(20);//for safer side
   chipid = FTImpl.Read32(FT_ROM_CHIPID);
 
@@ -66,7 +66,7 @@ void setup() {
     Serial.println("Error");
   }
   else {
-    /*calibrate();*/
+    //calibrate();
     FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
   midi = MidiController::MidiController();
@@ -88,54 +88,46 @@ Key keys[5];
 void loop() {
   /* Read the touch screen xy and tag from GetCTouchXY API */
   Drawing::drawGrid(keys);
-  keys[0] = Key();
-  keys[1] = Key();
-  keys[2] = Key();
-  keys[3] = Key();
-  keys[4] = Key();
+  keys[0] = {0,0,0,0,0};
+  keys[1] = {0,0,0,0,0};
+  keys[2] = {0,0,0,0,0};
+  keys[3] = {0,0,0,0,0};
+  keys[4] = {0,0,0,0,0};
   FTImpl.GetCTouchXY(cTouchXY);
-
-  uint8_t touchedButtonTag = FTImpl.Read( REG_TOUCH_TAG);
 
 // Map the touch events to a key struct and store them for the highlighting
   if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
-    Position pos = Position();
-    pos.x = cTouchXY.x0;
-    pos.y = cTouchXY.y0;
+    Position pos = {cTouchXY.x0, cTouchXY.y0};
     Key key = Drawing::selectedKey(pos);
     keys[0] = key;
   }
 
   if (cTouchXY.x1 != invalidTouch || cTouchXY.y1 != invalidTouch) {
-    Position pos = Position();
-    pos.x = cTouchXY.x1;
-    pos.y = cTouchXY.y1;
+    Position pos = {cTouchXY.x1, cTouchXY.y1};
     Key key = Drawing::selectedKey(pos);
     keys[1] = key;
+    Serial.println("Touch 1");
   }
 
   if (cTouchXY.x2 != invalidTouch || cTouchXY.y2 != invalidTouch) {
-    Position pos = Position();
-    pos.x = cTouchXY.x2;
-    pos.y = cTouchXY.y2;
+    Position pos = {cTouchXY.x2, cTouchXY.y2};
     Key key = Drawing::selectedKey(pos);
     keys[2] = key;
+    Serial.println("Touch 2");
   }
   if (cTouchXY.x3 != invalidTouch || cTouchXY.y3 != invalidTouch) {
-    Position pos = Position();
-    pos.x = cTouchXY.x3;
-    pos.y = cTouchXY.y3;
+    Position pos = {cTouchXY.x3, cTouchXY.y3};
     Key key = Drawing::selectedKey(pos);
     keys[3] = key;
+    Serial.println("Touch 3");
   }
   if (cTouchXY.x4 != invalidTouch || cTouchXY.y4 != invalidTouch) {
-    Position pos = Position();
-    pos.x = cTouchXY.x4;
-    pos.y = cTouchXY.y4;
+    Position pos = {cTouchXY.x4, cTouchXY.y4};
     Key key = Drawing::selectedKey(pos);
     keys[4] = key;
+    Serial.println("Touch 4");
   }
-
+  
   midi.playNotes(keys);
 }
 
@@ -149,7 +141,7 @@ void loop() {
 // For more infos, see the documentation
 
 
-uint16_t numberOfLines = 8;
+uint16_t numberOfLines = 1;
 uint16_t numberOfRows = 8;
 
 static void Drawing::drawGrid(Key keys[5]) {
@@ -173,8 +165,8 @@ static void Drawing::drawGrid(Key keys[5]) {
           break;
         }
       }
-      
-      FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 16, FT_OPT_FLAT, "C");
+      const char* text = MidiController::noteForRow(row).text;
+      FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 16, FT_OPT_FLAT, text);
     }
   }
 
