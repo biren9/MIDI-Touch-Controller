@@ -2,6 +2,7 @@
 #include "Wire.h"
 #include "FT_NHD_43CTP_SHIELD.h"
 #include "Drawing.h"
+#include "MidiController.h"
 
 FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
 
@@ -52,6 +53,8 @@ void calibrate() {
 /* bootup the module and display primitives on screen */
 
 
+MidiController midi;
+
 void setup() {
   /* Initialize serial print related functionality */
   Serial.begin(9600);
@@ -66,7 +69,8 @@ void setup() {
     /*calibrate();*/
     FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
-
+  midi = MidiController::MidiController();
+  
   Serial.println("End Setup");
 }
 
@@ -132,7 +136,7 @@ void loop() {
     keys[4] = key;
   }
 
-  Serial.println("_________________");
+  midi.playNotes(keys);
 }
 
 
@@ -203,13 +207,15 @@ static Key Drawing::selectedKey(Position position) {
   Key key = Key();
   int32_t buttonWidth = FT_DISPLAYWIDTH / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
-  uint16_t selectedLine = position.x / buttonWidth;
-  uint16_t selectedRow = position.y / buttonHight;
+  uint8_t selectedLine = position.x / buttonWidth;
+  uint8_t selectedRow = position.y / buttonHight;
   double xValue = (double)(position.x - selectedLine * buttonWidth) / (double)buttonWidth;
   double yValue = (double)(position.y - selectedRow * buttonHight) / (double)buttonHight;
 
   key.tag = selectedLine * numberOfLines + selectedRow + 1;
   key.xValue = xValue;
   key.yValue = yValue;
+  key.line = selectedLine;
+  key.row= selectedRow;
   return key;
 }

@@ -1,4 +1,7 @@
+#ifndef Drawing_h
+#define Drawing_h
 
+#include <stdint.h>
 /* Global object for FT801 Implementation */
 
 typedef struct Position {
@@ -8,6 +11,8 @@ typedef struct Position {
 
 typedef struct {
   uint8_t tag;
+  uint8_t line;
+  uint8_t row;
   double xValue;
   double yValue;
 } Key;
@@ -18,3 +23,5 @@ class Drawing {
     static void drawGrid(Key keys[5]);
     static Key selectedKey(Position position);
 };
+
+#endif
