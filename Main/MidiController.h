@@ -16,4 +16,5 @@ class MidiController {
 
   private:
     int MidiController::noteForKey(Key key);
+    int MidiController::noteForRow(uint8_t row);
 };
