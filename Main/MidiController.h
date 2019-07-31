@@ -20,7 +20,7 @@ class MidiController {
     MidiController();
     static void init();
     void MidiController::playNotes(Key keys[5]);
-    static Note MidiController::noteForRow(uint8_t row);
+    static Note MidiController::noteForRow(uint8_t line);
 
   private:
     int MidiController::noteForKey(Key key);

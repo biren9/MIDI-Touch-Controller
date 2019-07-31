@@ -1,6 +1,12 @@
 #include "MidiController.h"
 #include <arduino.h>
 
+#define EFFECT_LEVEL 7
+#define EFFECT_PAN 10
+#define EFFECT_DELAY 72
+#define EFFECT_CUTOFF 74
+
+
 MidiController::MidiController() {
   Serial3.begin(31250);
 }
@@ -45,13 +51,10 @@ void MidiController::playNotes(Key keys[5]) {
     }
   }
 
-controlChange(74, keys[0].xValue);
+controlChange(EFFECT_CUTOFF, keys[0].xValue);
+controlChange(EFFECT_DELAY, keys[0].yValue);
   
 }
-
-#define EFFECT_LEVEL 7
-#define EFFECT_PAN 10
-#define EFFECT_CUTOFF 74
 
 void MidiController::controlChange(uint8_t control, double value) {
   Serial3.write(MIDI_COMMAND_CONTROL_CHANGE | 0);
@@ -61,8 +64,8 @@ void MidiController::controlChange(uint8_t control, double value) {
 }
 
 
-static Note MidiController::noteForRow(uint8_t row) {
-  switch (row) {
+static Note MidiController::noteForRow(uint8_t line) {
+  switch (line) {
     case 0:
       return {0, "C"};
     case 1:
@@ -86,5 +89,5 @@ static Note MidiController::noteForRow(uint8_t row) {
 
 
 int MidiController::noteForKey(Key key) {
-  return noteForRow(key.row).value + 12 * oktave;
+  return noteForRow(key.line).value + 12 * oktave;
 }

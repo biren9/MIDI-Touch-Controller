@@ -141,8 +141,8 @@ void loop() {
 // For more infos, see the documentation
 
 
-uint16_t numberOfLines = 1;
-uint16_t numberOfRows = 8;
+uint16_t numberOfLines = 4;
+uint16_t numberOfRows = 2;
 
 static void Drawing::drawGrid(Key keys[5]) {
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
