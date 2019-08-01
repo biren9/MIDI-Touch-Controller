@@ -13,6 +13,7 @@ typedef struct {
   uint8_t tag;
   uint8_t line;
   uint8_t row;
+  int oktave;
   double xValue;
   double yValue;
 } Key;
@@ -26,7 +27,7 @@ typedef struct {
 class Drawing {  
   public:
     static void drawGrid(Key keys[5], MenuInformation information);
-    static Key selectedKey(Position position);
+    static Key Drawing::selectedKey(Position position, int oktave);
 };
 
 #endif

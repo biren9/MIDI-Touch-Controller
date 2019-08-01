@@ -17,6 +17,14 @@ MidiController::MidiController() {
 
 void MidiController::setOktave(int oktave) {
   currentSelectedOktave = oktave;
+
+  for (int currentPlayingIndex = 0; currentPlayingIndex < 5; ++currentPlayingIndex) {
+    if(currentPlayingKeys[currentPlayingIndex].tag != 0) {
+      Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
+      Serial3.write(0x7F & noteForKey(currentPlayingKeys[currentPlayingIndex]).value);
+      Serial3.write(0x7F & 0);
+    }
+  }
 }
 
 int MidiController::currentOktave() {
@@ -76,12 +84,7 @@ void MidiController::controlChange(uint8_t control, double value) {
 }
 
 static Note MidiController::noteForKey(Key key) {
-  return noteForLineRow(key.line, key.row);
-}
-
-static Note MidiController::noteForLineRow(uint8_t line, uint8_t row) {
-  uint16_t i = line + row * numberOfLines;
-  Serial.println(i);
+    uint16_t i = key.line + key.row * numberOfLines;
   Note note;
   switch (i%12) {
     case 0:
@@ -112,6 +115,11 @@ static Note MidiController::noteForLineRow(uint8_t line, uint8_t row) {
       note = {0, "C"};
       break;
   }
-  note.value = note.value + 12 * currentSelectedOktave;
+  note.value = note.value + 12 * key.oktave;
   return note;
+}
+
+static char* MidiController::noteForLineRow(uint8_t line, uint8_t row) {
+  Note note = noteForKey({0, line, row, 0, -1, -1});
+  return note.text;
 }

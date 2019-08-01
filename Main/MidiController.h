@@ -23,7 +23,7 @@ class MidiController {
 
     void MidiController::playNotes(Key keys[5]);
     static Note MidiController::noteForKey(Key key);
-    static Note MidiController::noteForLineRow(uint8_t line, uint8_t row);
+    static char* MidiController::noteForLineRow(uint8_t line, uint8_t row);
 
   private:
     void MidiController::controlChange(uint8_t control, double value);

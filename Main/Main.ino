@@ -72,6 +72,9 @@ void setup() {
     FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
   }
   midi = MidiController::MidiController();
+
+  pinMode(PORT_OKTAVE_INCREASE, INPUT_PULLUP);
+  pinMode(PORT_OKTAVE_DECREASE, INPUT_PULLUP);
   
   Serial.println("End Setup");
 }
@@ -86,53 +89,84 @@ int32_t invalidTouch = -pow(2, 15);
 
 
 Key keys[5];
+bool hasOktaveIncreased = false;
+bool hasOktaveDecreased = false;
 
 void loop() {
+  /* Update Menu */
   MenuInformation information = MenuInformation();
   information.oktave = midi.currentOktave();
   Drawing::drawGrid(keys, information);
-  
-  keys[0] = {0,0,0,-1,-1};
-  keys[1] = {0,0,0,-1,-1};
-  keys[2] = {0,0,0,-1,-1};
-  keys[3] = {0,0,0,-1,-1};
-  keys[4] = {0,0,0,-1,-1};
+
+  /* reset selected keys */
+  keys[0] = {0,0,0,0,-1,-1};
+  keys[1] = {0,0,0,0,-1,-1};
+  keys[2] = {0,0,0,0,-1,-1};
+  keys[3] = {0,0,0,0,-1,-1};
+  keys[4] = {0,0,0,0,-1,-1};
   FTImpl.GetCTouchXY(cTouchXY);
 
 // Map the touch events to a key struct and store them for the highlighting
+  int currentOktave = midi.currentOktave();
   if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
     Position pos = {cTouchXY.x0, cTouchXY.y0};
-    Key key = Drawing::selectedKey(pos);
+    Key key = Drawing::selectedKey(pos, currentOktave);
     keys[0] = key;
   }
 
   if (cTouchXY.x1 != invalidTouch || cTouchXY.y1 != invalidTouch) {
     Position pos = {cTouchXY.x1, cTouchXY.y1};
-    Key key = Drawing::selectedKey(pos);
+    Key key = Drawing::selectedKey(pos, currentOktave);
     keys[1] = key;
     Serial.println("Touch 1");
   }
 
   if (cTouchXY.x2 != invalidTouch || cTouchXY.y2 != invalidTouch) {
     Position pos = {cTouchXY.x2, cTouchXY.y2};
-    Key key = Drawing::selectedKey(pos);
+    Key key = Drawing::selectedKey(pos, currentOktave);
     keys[2] = key;
     Serial.println("Touch 2");
   }
   if (cTouchXY.x3 != invalidTouch || cTouchXY.y3 != invalidTouch) {
     Position pos = {cTouchXY.x3, cTouchXY.y3};
-    Key key = Drawing::selectedKey(pos);
+    Key key = Drawing::selectedKey(pos, currentOktave);
     keys[3] = key;
     Serial.println("Touch 3");
   }
   if (cTouchXY.x4 != invalidTouch || cTouchXY.y4 != invalidTouch) {
     Position pos = {cTouchXY.x4, cTouchXY.y4};
-    Key key = Drawing::selectedKey(pos);
+    Key key = Drawing::selectedKey(pos, currentOktave);
     keys[4] = key;
     Serial.println("Touch 4");
   }
   
   midi.playNotes(keys);
+
+  /* Handle oktave increase */
+  int oktavePinValue = digitalRead(PORT_OKTAVE_INCREASE);
+  if (oktavePinValue == 0) {
+    int newOktave = midi.currentOktave() + 1;
+    if (newOktave <= 7 && hasOktaveIncreased == false) {
+      midi.setOktave(newOktave);
+      hasOktaveIncreased = true;
+    }
+  } else {
+    hasOktaveIncreased = false;
+  }
+
+  /* Handle oktave decrease */
+  oktavePinValue = digitalRead(PORT_OKTAVE_DECREASE);
+  if (oktavePinValue == 0) {
+    int newOktave = midi.currentOktave() - 1;
+    if (newOktave >= 0 && hasOktaveDecreased == false) {
+      midi.setOktave(newOktave);
+      hasOktaveDecreased = true;
+    }
+  } else {
+    hasOktaveDecreased = false;
+  }
+
+  
 }
 
 
@@ -172,7 +206,7 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
         }
       }
 
-      const char* text = MidiController::noteForLineRow(line, row).text;
+      const char* text = MidiController::noteForLineRow(line, row);
       FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 31, FT_OPT_FLAT, text);
     }
   }
@@ -207,7 +241,7 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
 }
 
 
-static Key Drawing::selectedKey(Position position) {
+static Key Drawing::selectedKey(Position position, int oktave) {
   uint16_t menuOffset = MENU_WIDTH;  
   Key key = Key();
   int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
@@ -220,6 +254,7 @@ static Key Drawing::selectedKey(Position position) {
   key.tag = selectedLine * numberOfLines + selectedRow + 1;
   key.xValue = xValue;
   key.yValue = yValue;
+  key.oktave = oktave;
   key.line = selectedLine;
   key.row= selectedRow;
   return key;
