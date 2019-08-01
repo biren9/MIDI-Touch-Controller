@@ -88,13 +88,15 @@ int32_t invalidTouch = -pow(2, 15);
 Key keys[5];
 
 void loop() {
-  /* Read the touch screen xy and tag from GetCTouchXY API */
-  Drawing::drawGrid(keys);
-  keys[0] = {0,0,0,0,0};
-  keys[1] = {0,0,0,0,0};
-  keys[2] = {0,0,0,0,0};
-  keys[3] = {0,0,0,0,0};
-  keys[4] = {0,0,0,0,0};
+  MenuInformation information = MenuInformation();
+  information.oktave = midi.currentOktave();
+  Drawing::drawGrid(keys, information);
+  
+  keys[0] = {0,0,0,-1,-1};
+  keys[1] = {0,0,0,-1,-1};
+  keys[2] = {0,0,0,-1,-1};
+  keys[3] = {0,0,0,-1,-1};
+  keys[4] = {0,0,0,-1,-1};
   FTImpl.GetCTouchXY(cTouchXY);
 
 // Map the touch events to a key struct and store them for the highlighting
@@ -142,28 +144,23 @@ void loop() {
 // Due to a bug in the FT_NHD_43CTP_SHIELD Library.
 // For more infos, see the documentation
 
-static void Drawing::drawGrid(Key keys[5]) {
+static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
   
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
-
   uint16_t menuOffset = MENU_WIDTH;
-  
-
 
   FTImpl.DLStart();//start the display list. Note DLStart and DLEnd are helper apis, Cmd_DLStart() and Display() can also be utilized.
 
-
+/* DRAW the buttons */
   int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
 
   for (uint16_t line = 0; line < numberOfLines; ++line) {
     for (int row = 0; row < numberOfRows; ++row) {
-      
       uint16_t xPos = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines * line + menuOffset;
       uint16_t yPos = FT_DISPLAYHEIGHT / numberOfRows * row;
       uint8_t tag = line * numberOfLines + row + 1;
-      
       
       FTImpl.Tag(tag);
       FTImpl.Cmd_FGColor(0x008000);
@@ -175,11 +172,8 @@ static void Drawing::drawGrid(Key keys[5]) {
         }
       }
 
-      
       const char* text = MidiController::noteForLineRow(line, row).text;
       FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 31, FT_OPT_FLAT, text);
-
-      /* */
     }
   }
 
@@ -203,6 +197,10 @@ static void Drawing::drawGrid(Key keys[5]) {
     FTImpl.Vertex2f(displayWidth, yPos);
     FTImpl.End();//end line strip primitive
   }
+
+
+  /* DRAW Menu */
+  FTImpl.Cmd_Number(10, 10, 31, 0, information.oktave);
 
   FTImpl.DLEnd();//end the display list
   FTImpl.Finish();//render the display list and wait for the completion of the DL

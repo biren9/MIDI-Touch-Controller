@@ -60,9 +60,13 @@ void MidiController::playNotes(Key keys[5]) {
     }
   }
 
-  controlChange(EFFECT_CUTOFF, keys[0].xValue);
-  controlChange(EFFECT_PAN, keys[0].yValue);
-
+  for (int keyIndex = 4; keyIndex >= 0; --keyIndex) {
+    if (keys[keyIndex].xValue != -1 && keys[keyIndex].yValue != -1) {
+      controlChange(EFFECT_CUTOFF, keys[keyIndex].xValue); 
+      controlChange(EFFECT_PAN, keys[keyIndex].yValue); 
+      break;
+    }
+  }
 }
 
 void MidiController::controlChange(uint8_t control, double value) {

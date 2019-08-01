@@ -18,9 +18,14 @@ typedef struct {
 } Key;
 
 
+typedef struct {
+  uint8_t oktave;
+} MenuInformation;
+
+
 class Drawing {  
   public:
-    static void drawGrid(Key keys[5]);
+    static void drawGrid(Key keys[5], MenuInformation information);
     static Key selectedKey(Position position);
 };
 
