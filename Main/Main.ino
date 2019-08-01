@@ -13,7 +13,7 @@ FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
 int16_t BootupConfigure() {
   uint32_t chipid = 0;
   FTImpl.Init(FT_DISPLAY_RESOLUTION);//configure the display to the WQVGA
-  
+
   delay(20);//for safer side
   chipid = FTImpl.Read32(FT_ROM_CHIPID);
 
@@ -75,7 +75,7 @@ void setup() {
 
   pinMode(PORT_OKTAVE_INCREASE, INPUT_PULLUP);
   pinMode(PORT_OKTAVE_DECREASE, INPUT_PULLUP);
-  
+
   Serial.println("End Setup");
 }
 
@@ -99,14 +99,14 @@ void loop() {
   Drawing::drawGrid(keys, information);
 
   /* reset selected keys */
-  keys[0] = {0,0,0,0,-1,-1};
-  keys[1] = {0,0,0,0,-1,-1};
-  keys[2] = {0,0,0,0,-1,-1};
-  keys[3] = {0,0,0,0,-1,-1};
-  keys[4] = {0,0,0,0,-1,-1};
+  keys[0] = {0, 0, 0, 0, -1, -1};
+  keys[1] = {0, 0, 0, 0, -1, -1};
+  keys[2] = {0, 0, 0, 0, -1, -1};
+  keys[3] = {0, 0, 0, 0, -1, -1};
+  keys[4] = {0, 0, 0, 0, -1, -1};
   FTImpl.GetCTouchXY(cTouchXY);
 
-// Map the touch events to a key struct and store them for the highlighting
+  // Map the touch events to a key struct and store them for the highlighting
   int currentOktave = midi.currentOktave();
   if (cTouchXY.x0 != invalidTouch || cTouchXY.y0 != invalidTouch) {
     Position pos = {cTouchXY.x0, cTouchXY.y0};
@@ -139,7 +139,7 @@ void loop() {
     keys[4] = key;
     Serial.println("Touch 4");
   }
-  
+
   midi.playNotes(keys);
 
   /* Handle oktave increase */
@@ -166,7 +166,7 @@ void loop() {
     hasOktaveDecreased = false;
   }
 
-  
+
 }
 
 
@@ -179,14 +179,14 @@ void loop() {
 // For more infos, see the documentation
 
 static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
-  
+
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
   uint16_t menuOffset = MENU_WIDTH;
 
   FTImpl.DLStart();//start the display list. Note DLStart and DLEnd are helper apis, Cmd_DLStart() and Display() can also be utilized.
 
-/* DRAW the buttons */
+  /* DRAW the buttons */
   int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
 
@@ -195,11 +195,11 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
       uint16_t xPos = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines * line + menuOffset;
       uint16_t yPos = FT_DISPLAYHEIGHT / numberOfRows * row;
       uint8_t tag = line * numberOfLines + row + 1;
-      
+
       FTImpl.Tag(tag);
       FTImpl.Cmd_FGColor(0x008000);
 
-      for(int k=0; k < 5; ++k) {
+      for (int k = 0; k < 5; ++k) {
         if (keys[k].tag == tag) {
           FTImpl.Cmd_FGColor(0x900000);
           break;
@@ -215,8 +215,8 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
 
   /* Draw lines of grid*/
   for (uint16_t line = 1; line <= numberOfLines; ++line) {
-    uint16_t xPos = (((FT_DISPLAYWIDTH - menuOffset) * 16) / (float)numberOfLines) * line + menuOffset*16;
-    
+    uint16_t xPos = (((FT_DISPLAYWIDTH - menuOffset) * 16) / (float)numberOfLines) * line + menuOffset * 16;
+
     FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
     FTImpl.Vertex2f(xPos, 0); //starting coordinates
     FTImpl.Vertex2f(xPos, displayHeight);
@@ -227,7 +227,7 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
   for (int row = 1; row < numberOfRows; ++row) {
     uint16_t yPos = displayHeight / numberOfRows * row;
     FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
-    FTImpl.Vertex2f(menuOffset*16, yPos); //starting coordinates
+    FTImpl.Vertex2f(menuOffset * 16, yPos); //starting coordinates
     FTImpl.Vertex2f(displayWidth, yPos);
     FTImpl.End();//end line strip primitive
   }
@@ -242,7 +242,7 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
 
 
 static Key Drawing::selectedKey(Position position, int oktave) {
-  uint16_t menuOffset = MENU_WIDTH;  
+  uint16_t menuOffset = MENU_WIDTH;
   Key key = Key();
   int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
@@ -256,6 +256,6 @@ static Key Drawing::selectedKey(Position position, int oktave) {
   key.yValue = yValue;
   key.oktave = oktave;
   key.line = selectedLine;
-  key.row= selectedRow;
+  key.row = selectedRow;
   return key;
 }

@@ -24,7 +24,7 @@ typedef struct {
 } MenuInformation;
 
 
-class Drawing {  
+class Drawing {
   public:
     static void drawGrid(Key keys[5], MenuInformation information);
     static Key Drawing::selectedKey(Position position, int oktave);
