@@ -21,6 +21,9 @@ class MidiController {
     void MidiController::setOktave(int oktave);
     int MidiController::currentOktave();
 
+    void MidiController::setControllerX(uint8_t controllerX);
+    void MidiController::setControllerY(uint8_t controllerY);
+
     void MidiController::playNotes(Key keys[5]);
     static Note MidiController::noteForKey(Key key);
     static char* MidiController::noteForLineRow(uint8_t line, uint8_t row);

@@ -10,9 +10,19 @@
 
 Key currentPlayingKeys[5];
 int currentSelectedOktave = DEFAULT_OKTAVE;
+uint8_t currentControllerX = 0;
+uint8_t currentControllerY = 0;
 
 MidiController::MidiController() {
   Serial3.begin(31250);
+}
+
+void MidiController::setControllerX(uint8_t controllerX) {
+  currentControllerX = controllerX;
+}
+
+void MidiController::setControllerY(uint8_t controllerY) {
+  currentControllerY = controllerY;
 }
 
 void MidiController::setOktave(int oktave) {
@@ -70,8 +80,8 @@ void MidiController::playNotes(Key keys[5]) {
 
   for (int keyIndex = 4; keyIndex >= 0; --keyIndex) {
     if (keys[keyIndex].xValue != -1 && keys[keyIndex].yValue != -1) {
-      controlChange(EFFECT_CUTOFF, keys[keyIndex].xValue);
-      controlChange(EFFECT_PAN, keys[keyIndex].yValue);
+      controlChange(currentControllerX, keys[keyIndex].xValue);
+      controlChange(currentControllerY, keys[keyIndex].yValue);
       break;
     }
   }

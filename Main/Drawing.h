@@ -21,6 +21,8 @@ typedef struct {
 
 typedef struct {
   uint8_t oktave;
+  uint8_t controllerX;
+  uint8_t controllerY;
 } MenuInformation;
 
 

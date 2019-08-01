@@ -75,6 +75,10 @@ void setup() {
 
   pinMode(PORT_OKTAVE_INCREASE, INPUT_PULLUP);
   pinMode(PORT_OKTAVE_DECREASE, INPUT_PULLUP);
+  pinMode(PORT_X_Controller, INPUT);
+  pinMode(PORT_Y_Controller, INPUT);
+  pinMode(PORT_X_ENABLE, INPUT_PULLUP);
+  pinMode(PORT_Y_ENABLE, INPUT_PULLUP);
 
   Serial.println("End Setup");
 }
@@ -92,12 +96,12 @@ Key keys[5];
 bool hasOktaveIncreased = false;
 bool hasOktaveDecreased = false;
 
-void loop() {
-  /* Update Menu */
-  MenuInformation information = MenuInformation();
-  information.oktave = midi.currentOktave();
-  Drawing::drawGrid(keys, information);
+bool hasControllerXSet = false;
+int controllerXValue;
+bool hasControllerYSet = false;
+int controllerYValue;
 
+void loop() {
   /* reset selected keys */
   keys[0] = {0, 0, 0, 0, -1, -1};
   keys[1] = {0, 0, 0, 0, -1, -1};
@@ -166,7 +170,53 @@ void loop() {
     hasOktaveDecreased = false;
   }
 
+  MenuInformation information = MenuInformation();
 
+  if (digitalRead(PORT_X_ENABLE) == 0) {
+    hasControllerXSet = false;
+    controllerXValue = smoothAnalog(PORT_X_Controller);
+  } else if (!hasControllerXSet) {
+    hasControllerXSet = true;
+    midi.setControllerX(controllerXValue);
+  }
+
+
+  if (digitalRead(PORT_Y_ENABLE) == 0) {
+    hasControllerYSet = false;
+    controllerYValue = smoothAnalog(PORT_Y_Controller);
+  } else if (!hasControllerYSet) {
+    hasControllerYSet = true;
+    midi.setControllerY(controllerYValue);
+  }
+
+  /* Update Menu */
+  information.oktave = midi.currentOktave();
+  information.controllerX = controllerXValue;
+  information.controllerY= controllerYValue;
+  Drawing::drawGrid(keys, information);
+
+}
+
+int smoothAnalog(int port) {
+  int i;
+  int value = 0;
+  int numReadings = 10;
+
+  for (i = 0; i < numReadings; i++) {
+    // Read light sensor data.
+    value = value + analogRead(port);
+
+    // 1ms pause adds more stability between reads.
+    delay(1);
+  }
+
+  // Take an average of all the readings.
+  value = value / numReadings;
+
+  // Scale to 8 bits (0 - 255).
+  value = value >> 3;
+
+  return value;
 }
 
 
@@ -235,6 +285,8 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
 
   /* DRAW Menu */
   FTImpl.Cmd_Number(10, 10, 31, 0, information.oktave);
+  FTImpl.Cmd_Number(10, 110, 28, 0, information.controllerX);
+  FTImpl.Cmd_Number(10, 210, 28, 0, information.controllerY);
 
   FTImpl.DLEnd();//end the display list
   FTImpl.Finish();//render the display list and wait for the completion of the DL
