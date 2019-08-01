@@ -1,8 +1,10 @@
+#include "Settings.h"
 #include "SPI.h"
 #include "Wire.h"
 #include "FT_NHD_43CTP_SHIELD.h"
 #include "Drawing.h"
 #include "MidiController.h"
+
 
 FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
 
@@ -140,41 +142,53 @@ void loop() {
 // Due to a bug in the FT_NHD_43CTP_SHIELD Library.
 // For more infos, see the documentation
 
-
-uint16_t numberOfLines = 4;
-uint16_t numberOfRows = 2;
-
 static void Drawing::drawGrid(Key keys[5]) {
+  
   uint16_t displayHeight = FT_DISPLAYHEIGHT * 16;
   uint16_t displayWidth = FT_DISPLAYWIDTH * 16;
 
+  uint16_t menuOffset = MENU_WIDTH;
+  
+
+
   FTImpl.DLStart();//start the display list. Note DLStart and DLEnd are helper apis, Cmd_DLStart() and Display() can also be utilized.
 
-  int32_t buttonWidth = FT_DISPLAYWIDTH / numberOfLines;
+
+  int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
+
   for (uint16_t line = 0; line < numberOfLines; ++line) {
     for (int row = 0; row < numberOfRows; ++row) {
-      uint16_t xPos = FT_DISPLAYWIDTH / numberOfLines * line;
+      
+      uint16_t xPos = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines * line + menuOffset;
       uint16_t yPos = FT_DISPLAYHEIGHT / numberOfRows * row;
       uint8_t tag = line * numberOfLines + row + 1;
+      
+      
       FTImpl.Tag(tag);
       FTImpl.Cmd_FGColor(0x008000);
+
       for(int k=0; k < 5; ++k) {
         if (keys[k].tag == tag) {
           FTImpl.Cmd_FGColor(0x900000);
           break;
         }
       }
-      const char* text = MidiController::noteForRow(row).text;
-      FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 16, FT_OPT_FLAT, text);
+
+      
+      const char* text = MidiController::noteForLineRow(line, row).text;
+      FTImpl.Cmd_Button(xPos, yPos, buttonWidth, buttonHight, 31, FT_OPT_FLAT, text);
+
+      /* */
     }
   }
 
   FTImpl.ColorRGB(0xFF, 0xFF, 0xFF); //set the color of the line strip to white
 
   /* Draw lines of grid*/
-  for (uint16_t line = 1; line < numberOfLines; ++line) {
-    uint16_t xPos = displayWidth / numberOfLines * line;
+  for (uint16_t line = 1; line <= numberOfLines; ++line) {
+    uint16_t xPos = (((FT_DISPLAYWIDTH - menuOffset) * 16) / (float)numberOfLines) * line + menuOffset*16;
+    
     FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
     FTImpl.Vertex2f(xPos, 0); //starting coordinates
     FTImpl.Vertex2f(xPos, displayHeight);
@@ -185,7 +199,7 @@ static void Drawing::drawGrid(Key keys[5]) {
   for (int row = 1; row < numberOfRows; ++row) {
     uint16_t yPos = displayHeight / numberOfRows * row;
     FTImpl.Begin(FT_LINE_STRIP);//begin lines primitive
-    FTImpl.Vertex2f(0, yPos); //starting coordinates
+    FTImpl.Vertex2f(menuOffset*16, yPos); //starting coordinates
     FTImpl.Vertex2f(displayWidth, yPos);
     FTImpl.End();//end line strip primitive
   }
@@ -196,12 +210,13 @@ static void Drawing::drawGrid(Key keys[5]) {
 
 
 static Key Drawing::selectedKey(Position position) {
+  uint16_t menuOffset = MENU_WIDTH;  
   Key key = Key();
-  int32_t buttonWidth = FT_DISPLAYWIDTH / numberOfLines;
+  int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
-  uint8_t selectedLine = position.x / buttonWidth;
+  uint8_t selectedLine = (position.x - menuOffset) / buttonWidth;
   uint8_t selectedRow = position.y / buttonHight;
-  double xValue = (double)(position.x - selectedLine * buttonWidth) / (double)buttonWidth;
+  double xValue = (double)((position.x - menuOffset) - selectedLine * buttonWidth) / (double)buttonWidth;
   double yValue = (double)(position.y - selectedRow * buttonHight) / (double)buttonHight;
 
   key.tag = selectedLine * numberOfLines + selectedRow + 1;

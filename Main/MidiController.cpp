@@ -1,4 +1,5 @@
 #include "MidiController.h"
+#include "Settings.h"
 #include <arduino.h>
 
 #define EFFECT_LEVEL 7
@@ -7,12 +8,20 @@
 #define EFFECT_CUTOFF 74
 
 
+Key currentPlayingKeys[5];
+int currentSelectedOktave = DEFAULT_OKTAVE;
+
 MidiController::MidiController() {
   Serial3.begin(31250);
 }
 
+void MidiController::setOktave(int oktave) {
+  currentSelectedOktave = oktave;
+}
 
-Key currentPlayingKeys[5];
+int MidiController::currentOktave() {
+  return currentSelectedOktave;
+}
 
 void MidiController::playNotes(Key keys[5]) {
 
@@ -27,7 +36,7 @@ void MidiController::playNotes(Key keys[5]) {
 
     if (!hasFound) {
       Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
-      Serial3.write(0x7F & noteForKey(currentPlayingKeys[currentPlayingIndex]));
+      Serial3.write(0x7F & noteForKey(currentPlayingKeys[currentPlayingIndex]).value);
       Serial3.write(0x7F & 0);
       currentPlayingKeys[currentPlayingIndex] = Key();
     }
@@ -45,49 +54,60 @@ void MidiController::playNotes(Key keys[5]) {
 
     if (!hasFound && keys[keyIndex].tag != 0) {
       Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
-      Serial3.write(0x7F & noteForKey(keys[keyIndex]));
+      Serial3.write(0x7F & noteForKey(keys[keyIndex]).value);
       Serial3.write(0x7F & 127);
-      currentPlayingKeys[keyIndex] = keys[keyIndex];      
+      currentPlayingKeys[keyIndex] = keys[keyIndex];
     }
   }
 
-controlChange(EFFECT_CUTOFF, keys[0].xValue);
-controlChange(EFFECT_DELAY, keys[0].yValue);
-  
+  controlChange(EFFECT_CUTOFF, keys[0].xValue);
+  controlChange(EFFECT_PAN, keys[0].yValue);
+
 }
 
 void MidiController::controlChange(uint8_t control, double value) {
   Serial3.write(MIDI_COMMAND_CONTROL_CHANGE | 0);
   Serial3.write(control);
-  Serial3.write((int)(value*127));
-  Serial.println(value);
+  Serial3.write((int)(value * 127));
 }
 
+static Note MidiController::noteForKey(Key key) {
+  return noteForLineRow(key.line, key.row);
+}
 
-static Note MidiController::noteForRow(uint8_t line) {
-  switch (line) {
+static Note MidiController::noteForLineRow(uint8_t line, uint8_t row) {
+  uint16_t i = line + row * numberOfLines;
+  Serial.println(i);
+  Note note;
+  switch (i%12) {
     case 0:
-      return {0, "C"};
+      note = {0, "C"};
+      break;
     case 1:
-      return {2, "D"};
+      note = {2, "D"};
+      break;
     case 2:
-      return {4, "E"};
+      note = {4, "E"};
+      break;
     case 3:
-      return {5, "F"};
+      note = {5, "F"};
+      break;
     case 4:
-      return {7, "G"};
+      note = {7, "G"};
+      break;
     case 5:
-      return {9, "A"};
+      note = {9, "A"};
+      break;
     case 6:
-      return {11, "B"};
+      note = {11, "B"};
+      break;
     case 7:
-      return {12, "C"};
+      note = {12, "C"};
+      break;
     default:
-      return {0, "C"};
+      note = {0, "C"};
+      break;
   }
-}
-
-
-int MidiController::noteForKey(Key key) {
-  return noteForRow(key.line).value + 12 * oktave;
+  note.value = note.value + 12 * currentSelectedOktave;
+  return note;
 }
