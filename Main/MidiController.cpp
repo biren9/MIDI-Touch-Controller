@@ -2,27 +2,30 @@
 #include "Settings.h"
 #include <arduino.h>
 
-#define EFFECT_LEVEL 7
-#define EFFECT_PAN 10
-#define EFFECT_DELAY 72
-#define EFFECT_CUTOFF 74
-
-
 Key currentPlayingKeys[5];
 int currentSelectedOktave = DEFAULT_OKTAVE;
-uint8_t currentControllerX = 0;
-uint8_t currentControllerY = 0;
+uint8_t currentSelectedControllerX = DEFAULT_CONTROLLER_X;
+uint8_t currentSelectedControllerY = DEFAULT_CONTROLLER_Y;
 
 MidiController::MidiController() {
   Serial3.begin(31250);
 }
 
 void MidiController::setControllerX(uint8_t controllerX) {
-  currentControllerX = controllerX;
+  currentSelectedControllerX = controllerX;
+}
+
+uint8_t MidiController::currentControllerX() {
+  return currentSelectedControllerX;
 }
 
 void MidiController::setControllerY(uint8_t controllerY) {
-  currentControllerY = controllerY;
+  currentSelectedControllerY = controllerY;
+}
+
+
+uint8_t MidiController::currentControllerY() {
+  return currentSelectedControllerY;
 }
 
 void MidiController::setOktave(int oktave) {
@@ -30,9 +33,7 @@ void MidiController::setOktave(int oktave) {
 
   for (int currentPlayingIndex = 0; currentPlayingIndex < 5; ++currentPlayingIndex) {
     if (currentPlayingKeys[currentPlayingIndex].tag != 0) {
-      Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
-      Serial3.write(0x7F & noteForKey(currentPlayingKeys[currentPlayingIndex]).value);
-      Serial3.write(0x7F & 0);
+      noteOn(currentPlayingIndex);
     }
   }
 }
@@ -53,9 +54,7 @@ void MidiController::playNotes(Key keys[5]) {
     }
 
     if (!hasFound) {
-      Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
-      Serial3.write(0x7F & noteForKey(currentPlayingKeys[currentPlayingIndex]).value);
-      Serial3.write(0x7F & 0);
+      noteOff(currentPlayingIndex);
       currentPlayingKeys[currentPlayingIndex] = Key();
     }
   }
@@ -71,17 +70,15 @@ void MidiController::playNotes(Key keys[5]) {
     }
 
     if (!hasFound && keys[keyIndex].tag != 0) {
-      Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
-      Serial3.write(0x7F & noteForKey(keys[keyIndex]).value);
-      Serial3.write(0x7F & 127);
       currentPlayingKeys[keyIndex] = keys[keyIndex];
+      noteOn(keyIndex);
     }
   }
 
   for (int keyIndex = 4; keyIndex >= 0; --keyIndex) {
     if (keys[keyIndex].xValue != -1 && keys[keyIndex].yValue != -1) {
-      controlChange(currentControllerX, keys[keyIndex].xValue);
-      controlChange(currentControllerY, keys[keyIndex].yValue);
+      controlChange(currentSelectedControllerX, keys[keyIndex].xValue);
+      controlChange(currentSelectedControllerY, keys[keyIndex].yValue);
       break;
     }
   }
@@ -93,8 +90,20 @@ void MidiController::controlChange(uint8_t control, double value) {
   Serial3.write((int)(value * 127));
 }
 
+void MidiController::noteOn(uint8_t index) {
+  Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
+  Serial3.write(0x7F & noteForKey(currentPlayingKeys[index]).value);
+  Serial3.write(0x7F & 127);
+}
+
+void MidiController::noteOff(uint8_t index) {
+  Serial3.write(MIDI_COMMAND_NOTE_ON | 0);
+      Serial3.write(0x7F & noteForKey(currentPlayingKeys[index]).value);
+      Serial3.write(0x7F & 0);
+}
+
 static Note MidiController::noteForKey(Key key) {
-  uint16_t i = key.line + key.row * numberOfLines;
+  uint16_t i = key.line + ((numberOfRows-1)-key.row) * numberOfLines;
   Note note;
   switch (i % 12) {
     case 0:

@@ -5,6 +5,10 @@
 #define numberOfLines 4
 #define numberOfRows 2
 
+#define DEFAULT_OKTAVE 3
+#define DEFAULT_CONTROLLER_X 74
+#define DEFAULT_CONTROLLER_Y 10
+
 /* HARDWARE PINS */
 #define PORT_OKTAVE_INCREASE 37
 #define PORT_OKTAVE_DECREASE 39

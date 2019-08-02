@@ -8,9 +8,28 @@
 
 FT801IMPL_SPI FTImpl(FT_CS_PIN, FT_PDN_PIN, FT_INT_PIN);
 
+MidiController midi;
+
+int32_t  wbutton, hbutton, tagval, tagoption;
+int16_t yValue, xValue, pendown;
+sCTouchXY cTouchXY;
+/*wbutton = FT_DISPLAYWIDTH / 8;
+  hbutton = FT_DISPLAYHEIGHT / 8;*/
+
+int32_t invalidTouch = -pow(2, 15);
+
+Key keys[5];
+bool hasOktaveIncreased = false;
+bool hasOktaveDecreased = false;
+
+bool hasControllerXSet = false;
+int controllerXValue;
+bool hasControllerYSet = false;
+int controllerYValue;
+
 /* Api to bootup FT801, verify FT801 hardware and configure display/audio pins */
 /* Returns 0 in case of success and 1 in case of failure */
-int16_t BootupConfigure() {
+int16_t touchScreenConfigure() {
   uint32_t chipid = 0;
   FTImpl.Init(FT_DISPLAY_RESOLUTION);//configure the display to the WQVGA
 
@@ -29,49 +48,20 @@ int16_t BootupConfigure() {
   FTImpl.SetAudioEnablePin(FT_AUDIOENABLE_PIN);
   FTImpl.DisplayOn();
   FTImpl.AudioOn();
+  FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);
   return 0;
 }
 
-/* API for calibration on FT801 */
-void calibrate() {
-  /*************************************************************************/
-  /* Below code demonstrates the usage of calibrate function. Calibrate    */
-  /* function will wait untill user presses all the three dots. Only way to*/
-  /* come out of this api is to reset the coprocessor bit.                 */
-  /*************************************************************************/
-
-  /* Construct the display list with grey as background color, informative string "Please Tap on the dot" followed by inbuilt calibration command */
-  FTImpl.DLStart();
-  FTImpl.ClearColorRGB(64, 64, 64);
-  FTImpl.Clear(1, 1, 1);
-  FTImpl.ColorRGB(0xff, 0xff, 0xff);
-  FTImpl.Cmd_Text((FT_DISPLAYWIDTH / 2), (FT_DISPLAYHEIGHT / 2), 27, FT_OPT_CENTER, "Please Tap on the dot");
-  FTImpl.Cmd_Calibrate(0);
-
-  /* Wait for the completion of calibration - either finish can be used for flush and check can be used */
-  FTImpl.Finish();
-}
-
-/* bootup the module and display primitives on screen */
-
-
-MidiController midi;
-
 void setup() {
-  /* Initialize serial print related functionality */
   Serial.begin(9600);
-
-  /* Set the Display Enable pin*/
-  Serial.println("--Start Application--");
-  if (BootupConfigure()) {
+  if (touchScreenConfigure()) {
     //error case - do not do any thing
-    Serial.println("Error");
+    Serial.println("Error occured");
   }
-  else {
-    //calibrate();
-    FTImpl.SetCTouchMode(FT_CTOUCH_MODE_EXTENDED);  //set mode to extended for FT801
-  }
+ 
   midi = MidiController::MidiController();
+  controllerXValue = midi.currentControllerX();
+  controllerYValue = midi.currentControllerY();
 
   pinMode(PORT_OKTAVE_INCREASE, INPUT_PULLUP);
   pinMode(PORT_OKTAVE_DECREASE, INPUT_PULLUP);
@@ -83,31 +73,12 @@ void setup() {
   Serial.println("End Setup");
 }
 
-int32_t  wbutton, hbutton, tagval, tagoption;
-int16_t yValue, xValue, pendown;
-sCTouchXY cTouchXY;
-/*wbutton = FT_DISPLAYWIDTH / 8;
-  hbutton = FT_DISPLAYHEIGHT / 8;*/
-
-int32_t invalidTouch = -pow(2, 15);
-
-
-Key keys[5];
-bool hasOktaveIncreased = false;
-bool hasOktaveDecreased = false;
-
-bool hasControllerXSet = false;
-int controllerXValue;
-bool hasControllerYSet = false;
-int controllerYValue;
-
 void loop() {
   /* reset selected keys */
-  keys[0] = {0, 0, 0, 0, -1, -1};
-  keys[1] = {0, 0, 0, 0, -1, -1};
-  keys[2] = {0, 0, 0, 0, -1, -1};
-  keys[3] = {0, 0, 0, 0, -1, -1};
-  keys[4] = {0, 0, 0, 0, -1, -1};
+  for (int i=0; i < 5; ++i) {
+    keys[i] = {0, 0, 0, 0, -1, -1};  
+  }
+  
   FTImpl.GetCTouchXY(cTouchXY);
 
   // Map the touch events to a key struct and store them for the highlighting
@@ -145,9 +116,13 @@ void loop() {
   }
 
   midi.playNotes(keys);
+  readPins();
+}
 
+void readPins() {
   /* Handle oktave increase */
   int oktavePinValue = digitalRead(PORT_OKTAVE_INCREASE);
+  Serial.println(oktavePinValue);
   if (oktavePinValue == 0) {
     int newOktave = midi.currentOktave() + 1;
     if (newOktave <= 7 && hasOktaveIncreased == false) {
@@ -194,7 +169,6 @@ void loop() {
   information.controllerX = controllerXValue;
   information.controllerY= controllerYValue;
   Drawing::drawGrid(keys, information);
-
 }
 
 int smoothAnalog(int port) {
@@ -203,21 +177,20 @@ int smoothAnalog(int port) {
   int numReadings = 10;
 
   for (i = 0; i < numReadings; i++) {
-    // Read light sensor data.
     value = value + analogRead(port);
-
-    // 1ms pause adds more stability between reads.
-    delay(1);
+    delay(1); // 1ms pause adds more stability between reads.
   }
 
-  // Take an average of all the readings.
   value = value / numReadings;
-
-  // Scale to 8 bits (0 - 255).
   value = value >> 3;
-
   return value;
 }
+
+
+
+
+
+
 
 
 //################################################
