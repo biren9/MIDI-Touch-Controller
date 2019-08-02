@@ -268,6 +268,11 @@ static void Drawing::drawGrid(Key keys[5], MenuInformation information) {
 
 static Key Drawing::selectedKey(Position position, int oktave) {
   uint16_t menuOffset = MENU_WIDTH;
+
+  if (position.x < menuOffset) {
+    return {0, 0, 0, 0, -1, -1};
+  }
+  
   Key key = Key();
   int32_t buttonWidth = (FT_DISPLAYWIDTH - menuOffset) / numberOfLines;
   int32_t buttonHight = FT_DISPLAYHEIGHT / numberOfRows;
